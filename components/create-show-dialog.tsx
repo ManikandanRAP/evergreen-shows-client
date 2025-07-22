@@ -25,8 +25,8 @@ interface CreateShowDialogProps {
 
 interface ShowFormData {
   // Basic Info
-  name: string
-  showType: string
+  title: string
+  show_type: string
   selectType: "Podcasts" | "Video Series" | "Live Show" | "Interview Series" | ""
   subnetwork: string
   format: "Video" | "Audio" | "Both" | ""
@@ -70,8 +70,8 @@ interface FormErrors {
 
 const initialFormData: ShowFormData = {
   // Basic Info
-  name: "",
-  showType: "",
+  title: "",
+  show_type: "",
   selectType: "",
   subnetwork: "",
   format: "",
@@ -160,7 +160,7 @@ export default function CreateShowDialog({ open, onOpenChange, editingShow, onSh
     if (editingShow) {
       setFormData({
         // Basic Info
-        name: editingShow.name,
+        title: editingShow.name,
         showType: editingShow.showType,
         selectType: editingShow.selectType,
         subnetwork: editingShow.subnetwork,
@@ -310,7 +310,7 @@ export default function CreateShowDialog({ open, onOpenChange, editingShow, onSh
     }
   }
 
-  const handleSave = async () => {
+  const handleSave__ = async () => {
     setAttemptedSubmit(true)
 
     if (!validateAllTabs()) {
@@ -337,6 +337,58 @@ export default function CreateShowDialog({ open, onOpenChange, editingShow, onSh
     setErrors({})
     setAttemptedSubmit(false)
   }
+
+  const handleSave = async () => {
+    setAttemptedSubmit(true);
+  
+    if (!validateAllTabs()) {
+      const tabsWithErrors = Object.entries(requiredFields).find(([tabId, fields]) =>
+        fields.some((field) => errors[field])
+      );
+  
+      if (tabsWithErrors) {
+        setCurrentTab(tabsWithErrors[0]);
+      }
+      return;
+    }
+  
+    setIsSubmitting(true);
+  
+    try {
+      const token = localStorage.getItem("access_token"); // Replace if token is stored elsewhere
+  
+      const response = await fetch("http://localhost:8000/podcasts", {
+        method: "POST",
+        
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        
+        body: JSON.stringify(formData)
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to save podcast");
+      }
+  
+      const data = await response.json();
+      console.log("Saved:", data);
+  
+      onShowUpdated?.();
+      onOpenChange(false);
+      setFormData(initialFormData);
+      setCurrentTab("basic");
+      setErrors({});
+      setAttemptedSubmit(false);
+    } catch (err) {
+      console.error("Save failed:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+  
 
   const handleCancel = () => {
     setFormData(initialFormData)
@@ -420,8 +472,8 @@ export default function CreateShowDialog({ open, onOpenChange, editingShow, onSh
                       <Input
                         id="name"
                         placeholder="Enter show name"
-                        value={formData.name}
-                        onChange={(e) => handleInputChange("name", e.target.value)}
+                        value={formData.title}
+                        onChange={(e) => handleInputChange("title", e.target.value)}
                         className={cn(getFieldError("name") && "border-red-500")}
                       />
                       {getFieldError("name") && (
@@ -438,8 +490,8 @@ export default function CreateShowDialog({ open, onOpenChange, editingShow, onSh
                       <Input
                         id="showType"
                         placeholder="e.g., Educational, Entertainment"
-                        value={formData.showType}
-                        onChange={(e) => handleInputChange("showType", e.target.value)}
+                        value={formData.show_type}
+                        onChange={(e) => handleInputChange("show_type", e.target.value)}
                         className={cn(getFieldError("showType") && "border-red-500")}
                       />
                       {getFieldError("showType") && (
